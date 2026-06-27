@@ -1,32 +1,27 @@
 import os
-import google.generativeai as genai
-import msvcrt # 윈도우에서 파일 잠금 문제를 피하기 위한 모듈
+from google import genai
 
-genai.configure(api_key="여기에_발급받은_API_키를_넣어줘") 
-
-def get_context_from_file():
-    file_path = os.path.join(os.path.dirname(__file__), "data.txt")
-    
-    # 윈도우 환경에서 파일 공유 모드로 열기
-    # os.O_RDONLY: 읽기 전용, os.O_BINARY: 바이너리 모드
-    fd = os.open(file_path, os.O_RDONLY | os.O_BINARY)
-    try:
-        # 파일 전체를 읽기
-        size = os.fstat(fd).st_size
-        content = os.read(fd, size)
-        return content.decode('utf-8')
-    finally:
-        os.close(fd) # 확실하게 닫기
+# 1. 최신 클라이언트 방식으로 초기화
+client = genai.Client(api_key="AIzaSyDe0hyTvo8tFkmPtw9GtjfW5C4x3C1LKFE")
 
 def ask_gemini(user_query):
+    # 파일 경로 설정 (현재 파일 옆에 있는 data.txt)
+    file_path = os.path.join(os.path.dirname(__file__), "data.txt")
+    
     try:
-        context = get_context_from_file()
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = f"다음 정보를 참고해서 답변해줘:\n\n{context}\n\n질문: {user_query}"
-        response = model.generate_content(prompt)
-        return response.text
+        with open(file_path, "r", encoding="utf-8") as f:
+            context = f.read()
     except Exception as e:
-        return f"오류 발생: {e}"
+        return f"파일 읽기 오류: {e}"
+
+    # 2. 최신 모델 호출 방식 (models.generate_content)
+    prompt = f"다음 정보를 참고해서 답변해줘:\n\n{context}\n\n질문: {user_query}"
+    
+    response = client.models.generate_content(
+        model='gemini-2.0-flash', 
+        contents=prompt,
+    )
+    return response.text
 
 if __name__ == "__main__":
     print(ask_gemini("당신은 누구인가요?"))
