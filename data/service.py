@@ -70,3 +70,35 @@ if __name__ == "__main__":
         
     except FileNotFoundError:
         print("파일을 찾을 수 없습니다.")
+
+# 수정 포인트
+# 1. '관광지명 ' -> '관광지명' (뒤에 공백 제거)
+# 2. '관광지 소개' -> '관광지소개' (우리가 위에서 정의한 컬럼명과 일치시켜야 해)
+# 3. to.string() -> to_string() (언더바가 맞아)
+# 4. data_samle -> data_sample (오타 수정)
+# 5. if __name__ == "__name__" -> if __name__ == "__main__" (이게 핵심!)
+
+def recommend_tour_site(user_preference, df):
+    # 컬럼명과 메서드 이름 정확히 확인
+    data_sample = df[['관광지명', '관광지소개']].head(10).to_string()
+
+    prompt = f"""
+    아래 관광지 정보들을 참고해서 사용자의 취향에 맞는 관광지를 추천해줘.
+    
+    [관광지 정보]
+    {data_sample}
+    
+    [사용자 취향]
+    {user_preference}
+    
+    답변은 추천 이유를 포함해서 친절하게 작성해줘.
+    """
+    return ask_gemini(prompt)
+
+if __name__ == "__main__":
+    # 데이터가 로드된 상태인 df를 사용해야 함
+    df_clean = preprocess_data(df)
+
+    # 추천 요청 
+    my_taste = "아이들과 함께 가기 좋은, 체험 활동이 많은 관광지를 추천해줘."
+    print(recommend_tour_site(my_taste, df_clean))
