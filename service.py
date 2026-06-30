@@ -9,6 +9,11 @@ import numpy as np
 # --- 1. 설정 및 초기화 ---
 # API 호출은 테스트 모드에서는 사용하지 않습니다.
 CACHE_FILE = 'gemini_cache.json'
+# 수정 전
+# file_path = os.path.join(os.path.dirname(__file__), '전국관광지정보표준데이터.csv')
+
+# 수정 후 (data 폴더를 명시!)
+
 
 # [테스트 모드] API 호출 제거: 랜덤 벡터 반환
 def get_query_embedding(query):
@@ -57,7 +62,7 @@ def recommend_tour_site(user_preference, df):
 
 # --- 6. 메인 실행부 ---
 if __name__ == "__main__" :
-    file_path = os.path.join(os.path.dirname(__file__), '전국관광지정보표준데이터.csv')
+    file_path = os.path.join(os.path.dirname(__file__), 'data', '전국관광지정보표준데이터.csv')
     
     try:
         df = pd.read_csv(file_path, encoding='cp949')
