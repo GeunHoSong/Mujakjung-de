@@ -4,6 +4,8 @@ import pandas as pd
 import json 
 from google import genai
 from sklearn.metrics.pairwise import cosine_similarity
+import random
+import numpy as np
 
 # --- 1. 설정 및 초기화 ---
 # Gemini API 초기화 (실제 사용 시 API 키 확인 필수)
@@ -13,11 +15,11 @@ CACHE_FILE = 'gemini_cache.json'
 # 1. 질문을 숫자로 바꾸는 함수 (API 호출)
 def get_query_embedding(query):
     # API를 통해 질문을 벡터로 변환
-    result = client.models.embed_content(
-        model="text-embedding-004", 
-        contents=query
-    )
-    return result.embeddings[0].values
+    # result = client.models.embed_content(
+    #     model="text-embedding-004", 
+    #     contents=query
+    # )
+    return [random.random() for _ in range(768)]
 
 # 2. 가장 비슷한 관광지를 찾는 함수
 def search_similar_tour(user_query, embedded_df):
@@ -36,12 +38,12 @@ def search_similar_tour(user_query, embedded_df):
     
     return embedded_df.iloc[best_idx]
 # 테스트 
-def get_embodding(text):
+def get_embedding(text):
     result = client.models.embed_content(
         model = "text-embedding-004",
         contents= text, 
     )
-    return result.embeddings[0].value
+    return [random.random() for _ in range(768)]
 
 def train_and_save_data(df):
     print("데이터 임베딩 중... (데이터 양에 따라 시간이 걸릴 수 있어요)")
