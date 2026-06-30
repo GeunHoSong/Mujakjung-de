@@ -1,50 +1,72 @@
 import os
 import time
-import pandas as pd # pandas를 여기서 불러와야 해!
+import pandas as pd 
+import json  # 추가
 from google import genai
 
-# 1. 클라이언트 초기화 (API 키는 .env에서 가져오는 게 좋아)
+# 1. Gemini API 클라이언트 초기화
 client = genai.Client(api_key="AIzaSyDe0hyTvo8tFkmPtw9GtjfW5C4x3C1LKFE")
 
-# 데이터 파일 불러오기
-file_path = os.path.join(os.path.dirname(__file__), '전국관광지정보표준데이터.csv')
-try: 
-    df = pd.read_csv(file_path, encoding='cp949') 
-    print(" --- 컬럼 목록 --- ")
-    print(df.columns.tolist())
-    ("\n-- 데이터 상위 3개 ---")
-    print(df.head(3)) # 수정됨
-except FileExistsError:
-    print("파일을 못찾았어~ 경로를 다시 확인 해봐 : {file_path}")
+# 캐시 파일 설정
+CACHE_FILE = 'gemini_cache.json'
 
+def load_cache():
+    if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {}
+
+def save_cache(cache):
+    with open(CACHE_FILE, 'w', encoding='utf-8') as f:
+        json.dump(cache, f, ensure_ascii=False, indent=4)
+
+# 3. 수정된 Gemini AI 질문 함수 (캐싱 적용)
 def ask_gemini(user_query):
-    # API 호출 전엔 쉬어주기 (무료 티어 제한 방지)
+    cache = load_cache()
+    
+    # 이미 물어본 적이 있으면 API 호출 안 함
+    if user_query in cache:
+        print(f"[캐시] '{user_query}'에 대한 답변을 가져옵니다.")
+        return cache[user_query]
+    
+    # 캐시에 없으면 API 호출
+    print(f"[API] '{user_query}' 질문 중...")
     time.sleep(5) 
     
-    # 2. 최신 모델 호출 방식
-    prompt = f"질문: {user_query}"
-    
-    # 여기서 response 변수를 선언해야 해!
-    response = client.models.generate_content(
-        model='gemini-2.0-flash', 
-        contents=prompt,
-    )
-    
-    return response.text
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.0-flash', 
+            contents=f"질문: {user_query}",
+        )
+        answer = response.text
+        
+        # 결과 저장
+        cache[user_query] = answer
+        save_cache(cache)
+        return answer
+    except Exception as e:
+        return f"에러 발생: {e}"
+
+# 4. 데이터 전처리 함수 (내용 그대로 유지)
 def preprocess_data(df):
-    # 정확한 컬럼명으로 수정했어 (터미널 출력값 기준)
     columns_to_keep = ['관광지명', '소재지도로명주소', '위도', '경도', '관광지소개']
     df_clean = df[columns_to_keep].copy()
-
-    # subset 이름도 정확하게!
     df_clean = df_clean.dropna(subset=['관광지명', '소재지도로명주소'])
-
-    print("-- 전처리 완료된 데이터 샘플 --")
-    print(df_clean.head())
+    
+    # 시군구 추출
+    df['시군구'] = df['소재지도로명주소'].str.split(' ').str[1]
+    
     return df_clean
 
-
-    
-
+# 5. 프로그램 시작
 if __name__ == "__main__":
-    print(ask_gemini("당신은 누구인가요?"))
+    file_path = os.path.join(os.path.dirname(__file__), '전국관광지정보표준데이터.csv')
+    try:
+        df = pd.read_csv(file_path, encoding='cp949')
+        df_clean = preprocess_data(df)
+        
+        # 테스트: 이제 10번을 실행해도 첫 번째만 API를 부르고 나머지는 캐시에서 가져옴!
+        print(ask_gemini("당신은 누구인가요?"))
+        
+    except FileNotFoundError:
+        print("파일을 찾을 수 없습니다.")
