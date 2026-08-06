@@ -1,7 +1,7 @@
 import pickle
 
 # 저장했던 피클 파일 경로 (오타 수정: EMNBEDDINGS -> EMBEDDINGS)
-EMBEDDINGS_OUTPUT_PATH = 'Mujakjung-de/tour_embeddings.pkl'
+EMBEDDINGS_OUTPUT_PATH = 'tour_embeddings.pkl'
 
 # 1. 피클 파일 불러 오기
 print("피클 파일 불러 오는 중...")
