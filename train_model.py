@@ -35,11 +35,10 @@ with open(DATA_FILE_PATH, "r", encoding="utf-8") as f:
 # 임베딩 함수
 # ==========================
 def get_embedding(text):
-
     text = text.replace("\n", " ")
 
     response = client.models.embed_content(
-        model="text-embedding-004",
+        model="gemini-embedding-2",  # 최신 공식 모델명으로 변경
         contents=text
     )
 

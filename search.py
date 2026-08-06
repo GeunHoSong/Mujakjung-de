@@ -1,12 +1,16 @@
 import os
 import pickle
 import numpy as np
+from dotenv import load_dotenv
 from google import genai
+
+# .env 파일에서 환경 변수 불러오기
+load_dotenv()
 
 # 파일 경로 설정
 EMBEDDINGS_INPUT_PATH = 'tour_embeddings.pkl'
 
-# 구글 Gemini 클라이언트 초기화 (환경 변수 방식으로 인증 오류 우회)
+# 구글 Gemini 클라이언트 초기화 (환경 변수 자동 연동)
 client = genai.Client()
 
 # 1. 검색어 임베딩 생성 함수 
@@ -14,7 +18,7 @@ def get_embedding(text):
     text = text.replace("\n", "")
     
     response = client.models.embed_content(
-        model="text-embedding-004", 
+        model="gemini-embedding-2",  # 여기를 train_model과 동일한 모델명으로 변경!
         contents=text
     )
     return response.embeddings[0].values
