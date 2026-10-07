@@ -45,7 +45,7 @@ def get_chat_session():
             "이전 대화 내용을 기억하며 자연스럽고 친근한 대화형 어조로 답변해주세요."
         )
         chat_session = client.chats.create(
-            model="gemini-3.8-flash",
+            model="gemini-2.0-flash",  # 👈 이 부분을 gemini-2.0-flash로 변경!
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
                 temperature=0.7,
@@ -55,7 +55,7 @@ def get_chat_session():
 
 @app.post("/generate")
 def generate(request: TextRequest):
-    max_retries = 100
+    max_retries = 5
     for attempt in range(max_retries):
         try:
             chat = get_chat_session()
