@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import List, Optional  # 수정: typing에서 가져오기
+from datetime import date
 import os
 import time
 import pickle
@@ -35,6 +37,18 @@ app.add_middleware(
 
 class TextRequest(BaseModel):
     content: str
+
+class PlaceItem(BaseModel):
+    name: str
+    latitude: float
+    longitude: float  # 오타 수정 (londitude -> longitude)
+    order_index: int
+    memo: Optional[str] = None
+
+class TodayScheduleCreate(BaseModel):
+    trip_id: str
+    visit_date: date
+    places: List[PlaceItem] = None  # PlaceItem 리스트를 받도록 수정
 
 # 5. RAG용 임베딩 데이터 로드
 TOUR_DATA = []
@@ -102,7 +116,7 @@ def generate(request: TextRequest):
             
             # 3. 단발성 고속 생성 요청
             response = client.models.generate_content(
-                model="gemini-3.8-flash",
+                model="gemini-3.8-flash", # 또는 쓰던 모델명
                 contents=enriched_content,
                 config=types.GenerateContentConfig(
                     temperature=0.7,
@@ -119,14 +133,33 @@ def generate(request: TextRequest):
         except Exception as e:
             print(f"시도 {attempt + 1} 실패 - 에러: {e}")
 
-            # 503 또는 UNAVAILABLE 에러 발생 시 0.5초 대기 후 재시도
             if ("503" in str(e) or "UNAVAILABLE" in str(e)) and attempt < max_retries - 1:
                 time.sleep(0.5)
                 continue       
             
-            # 마지막 시도까지 실패하면 500 에러 반환
             if attempt == max_retries - 1:
                 raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/schedules/today")
+def save_today_schedule(schedule: TodayScheduleCreate):
+    try:
+        # 달러 기호 제거 및 f-string 문법 정상화
+        print(f"[오늘 일정 저장 요청] 여행 ID: {schedule.trip_id}, 날짜: {schedule.visit_date}")
+        place_count = len(schedule.places) if schedule.places else 0
+        print(f"장소 개수: {place_count}개")
+        
+        # 딕셔너리로 정상 반환하도록 수정 ({ } 사용)
+        return {
+            "status": "success",
+            "message": "오늘 일정이 성공적으로 처리 되었습니다",
+            "data": schedule
+        }
+    except Exception as e:
+        # delattr -> detail로 수정
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
