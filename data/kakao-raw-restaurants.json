@@ -1,0 +1,44 @@
+[
+    {
+        "address_name": "인천 남동구 구월동 1135-1",
+        "category_group_code": "FD6",
+        "category_group_name": "음식점",
+        "category_name": "음식점 > 양식 > 이탈리안",
+        "distance": "365",
+        "id": "24267202",
+        "phone": "010-2059-0568",
+        "place_name": "보통날의파스타",
+        "place_url": "http://place.map.kakao.com/24267202",
+        "road_address_name": "인천 남동구 예술로 230",
+        "x": "126.702050163234",
+        "y": "37.454374603971"
+    },
+    {
+        "address_name": "인천 남동구 구월동 1608",
+        "category_group_code": "FD6",
+        "category_group_name": "음식점",
+        "category_name": "음식점 > 샐러드 > 포케올데이",
+        "distance": "311",
+        "id": "1461305301",
+        "phone": "070-4647-1869",
+        "place_name": "포케올데이 구월점",
+        "place_url": "http://place.map.kakao.com/1461305301",
+        "road_address_name": "인천 남동구 남동대로799번길 34",
+        "x": "126.7069947913332",
+        "y": "37.45408963319816"
+    },
+    {
+        "address_name": "인천 남동구 구월동 1140",
+        "category_group_code": "FD6",
+        "category_group_name": "음식점",
+        "category_name": "음식점 > 양식 > 스테이크,립",
+        "distance": "307",
+        "id": "827129833",
+        "phone": "032-424-2622",
+        "place_name": "에이스테이크",
+        "place_url": "http://place.map.kakao.com/827129833",
+        "road_address_name": "인천 남동구 미래로 42",
+        "x": "126.7058206220836",
+        "y": "37.4537731647949"
+    }
+]

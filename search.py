@@ -19,7 +19,7 @@ load_dotenv()
 
 # 관광지 임베딩 데이터가 저장된 파일 경로
 # 이 파일은 관광지 정보를 벡터로 변환해 미리 저장한 파일이다.
-EMBEDDINGS_INPUT_PATH = "tour_embeddings.pkl"
+EMBEDDINGS_INPUT_PATH = "data/tour_embeddings.pkl"
 
 # Gemini 클라이언트 초기화
 # google-genai SDK는 기본적으로 GOOGLE_API_KEY 환경 변수를 읽는다.
@@ -170,7 +170,7 @@ def search_kakao_restaurants(query, size=5):
 
     # .env 파일에서 카카오 REST API 키를 가져온다.
     # API 키를 소스 코드에 직접 작성하지 않는다.
-    kakao_api_key = os.getenv("KAKAO_API_KEY", "").strip()
+    kakao_api_key = os.getenv("KAKAO_API_KEY")
 
     # 키가 없으면 API 요청을 보내지 않는다.
     if not kakao_api_key:
