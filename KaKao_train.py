@@ -135,15 +135,17 @@ def generate_ai_recommendation(query, restaurants):
 
 # --- 🚀 메인 실행부 ---
 if __name__ == "__main__":
-    search_keyword = "파스타"  
-    print(f"'{search_keyword}' 키워드로 내 주변 맛집 검색 및 AI 추천 시작...\n" + "=" * 50)
+    # 사용자로부터 동적으로 검색어 입력받기 (엔터 치면 기본값 '맛집'으로 설정)
+    user_input = input("검색할 키워드나 음식을 입력하세요 (예: 파스타, 카페, 삼겹살): ").strip()
+    search_keyword = user_input if user_input else "맛집"
+    
+    print(f"\n'{search_keyword}' 키워드로 내 주변 맛집 검색 및 AI 추천 시작...\n" + "=" * 50)
     
     # 1. 카카오 API로 주변 맛집 데이터 가져오기 
-    # (sort="accuracy" -> 추천순/정확도순, sort="distance" -> 거리순)
     restaurants = search_nearby_restaurants(query=search_keyword, size=3, sort="accuracy")
 
     if restaurants:
-        # 2. 수집한 원본 데이터를 JSON 파일로 안전하게 저장
+        # 2. 수집한 원본 데이터를 JSON 파일로 저장
         os.makedirs('data', exist_ok=True)
         with open(OUTPUT_JSON_PATH, 'w', encoding='utf-8') as f:
             json.dump(restaurants, f, ensure_ascii=False, indent=4)
@@ -154,4 +156,4 @@ if __name__ == "__main__":
         ai_recommendation = generate_ai_recommendation(search_keyword, restaurants)
         print(ai_recommendation)
     else:
-        print("검색된 맛집이 없습니다.")
+        print(f"'{search_keyword}'에 대한 검색 결과가 없어.")

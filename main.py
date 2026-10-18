@@ -1,15 +1,20 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional  # 수정: typing에서 가져오기
-from datetime import date
 import os
 import time
 import pickle
 import numpy as np
+from datetime import date
+from typing import List, Optional
 from dotenv import load_dotenv
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
 from google import genai
 from google.genai import types
+
+# 분리한 라우터 불러오기
+from routers import recommend
 
 # 1. 환경 변수 로드
 load_dotenv()
@@ -24,9 +29,12 @@ if not api_key:
 client = genai.Client(api_key=api_key)
 
 # 3. FastAPI 애플리케이션 인스턴스 생성
-app = FastAPI()
+app = FastAPI(title="Mujakjung AI Backend", version="1.0.0")
 
-# 4. CORS 설정
+# 4. 라우터 등록
+app.include_router(recommend.router)
+
+# 5. CORS 설정
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -35,22 +43,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Pydantic 데이터 모델 정의 ---
 class TextRequest(BaseModel):
     content: str
 
 class PlaceItem(BaseModel):
     name: str
     latitude: float
-    longitude: float  # 오타 수정 (londitude -> longitude)
+    longitude: float
     order_index: int
     memo: Optional[str] = None
 
 class TodayScheduleCreate(BaseModel):
     trip_id: str
     visit_date: date
-    places: List[PlaceItem] = None  # PlaceItem 리스트를 받도록 수정
+    places: Optional[List[PlaceItem]] = None
 
-# 5. RAG용 임베딩 데이터 로드
+# --- RAG용 임베딩 데이터 로드 ---
 TOUR_DATA = []
 TOUR_EMBEDDINGS = []
 
@@ -94,12 +103,20 @@ def search_tour_spots(query: str, top_k=3):
     return "\n".join(result) if result else "관련 관광지를 찾지 못했습니다."
 
 
+# --- API 엔드포인트 정의 ---
+
+@app.get("/")
+def read_root():
+    return {"message": "Mujakjung AI Server is running"}
+
+
 @app.post("/generate")
 def generate(request: TextRequest):
     """
-    503 과부하 발생 시 자동으로 재시도하여 안정성을 높인 고속 엔드포인트
+    RAG 기반 관광지 정보 및 국내 여행 코스 추천 엔드포인트
+    (503 과부하 발생 시 자동 재시도)
     """
-    max_retries = 3  # 최대 3번까지 재시도
+    max_retries = 3
     for attempt in range(max_retries):
         try:
             # 1. 관련 관광지 데이터 검색
@@ -114,9 +131,9 @@ def generate(request: TextRequest):
 
             print(f"Gemini API 호출 시작... (시도 {attempt + 1})")
             
-            # 3. 단발성 고속 생성 요청
+            # 3. Gemini 호출
             response = client.models.generate_content(
-                model="gemini-3.8-flash", # 또는 쓰던 모델명
+                model="gemini-3.8-flash",
                 contents=enriched_content,
                 config=types.GenerateContentConfig(
                     temperature=0.7,
@@ -143,20 +160,18 @@ def generate(request: TextRequest):
 
 @app.post("/api/v1/schedules/today")
 def save_today_schedule(schedule: TodayScheduleCreate):
+    """오늘 일정 저장 API"""
     try:
-        # 달러 기호 제거 및 f-string 문법 정상화
         print(f"[오늘 일정 저장 요청] 여행 ID: {schedule.trip_id}, 날짜: {schedule.visit_date}")
         place_count = len(schedule.places) if schedule.places else 0
         print(f"장소 개수: {place_count}개")
         
-        # 딕셔너리로 정상 반환하도록 수정 ({ } 사용)
         return {
             "status": "success",
             "message": "오늘 일정이 성공적으로 처리 되었습니다",
             "data": schedule
         }
     except Exception as e:
-        # delattr -> detail로 수정
         raise HTTPException(status_code=500, detail=str(e))
 
 

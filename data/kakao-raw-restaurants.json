@@ -28,17 +28,17 @@
         "y": "37.45408963319816"
     },
     {
-        "address_name": "인천 남동구 구월동 1140",
+        "address_name": "인천 남동구 구월동 1134-10",
         "category_group_code": "FD6",
         "category_group_name": "음식점",
-        "category_name": "음식점 > 양식 > 스테이크,립",
-        "distance": "307",
-        "id": "827129833",
-        "phone": "032-424-2622",
-        "place_name": "에이스테이크",
-        "place_url": "http://place.map.kakao.com/827129833",
-        "road_address_name": "인천 남동구 미래로 42",
-        "x": "126.7058206220836",
-        "y": "37.4537731647949"
+        "category_name": "음식점 > 양식",
+        "distance": "343",
+        "id": "659589516",
+        "phone": "",
+        "place_name": "도로시파스타연정 인청시청점",
+        "place_url": "http://place.map.kakao.com/659589516",
+        "road_address_name": "인천 남동구 예술로226번길 18",
+        "x": "126.70288793928589",
+        "y": "37.454014507135895"
     }
 ]
