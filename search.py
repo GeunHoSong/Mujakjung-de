@@ -154,7 +154,7 @@ def search_tour(query, top_k=3):
 # 4. 카카오 로컬 API로 맛집을 검색하는 함수
 # ============================================================
 
-def search_kakao_restaurants(query, size=5):
+def search_nearby_restaurants(query, size=5):
     """
     카카오 로컬 키워드 검색 API로 실제 장소 정보를 가져온다.
 
@@ -303,7 +303,7 @@ if __name__ == "__main__":
     print(f"맛집 검색어: {restaurant_query}")
     print("=" * 50)
 
-    restaurants = search_kakao_restaurants(
+    restaurants = search_nearby_restaurants(
         query=restaurant_query,
         size=3
     )
