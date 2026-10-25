@@ -154,52 +154,43 @@ def search_tour(query, top_k=3):
 # 4. 카카오 로컬 API로 맛집을 검색하는 함수
 # ============================================================
 
-def search_nearby_restaurants(query, size=5):
+
+def search_nearby_restaurants(
+    query,
+    size=5,
+    latitude=None,
+    longitude=None
+):
     """
-    카카오 로컬 키워드 검색 API로 실제 장소 정보를 가져온다.
-
-    예:
-        query = "제주도 맛집"
-
-    반환 데이터에는 장소명, 주소, 좌표 등이 포함될 수 있다.
-
-    중요:
-    이 함수는 카카오 API 인증이 정상적으로 완료되어야
-    실제 검색 결과를 반환할 수 있다.
+    카카오 로컬 키워드 검색 API로 장소를 검색한다.
+    현재 위치가 있으면 반경 5km 내에서 가까운 순으로 검색한다.
     """
 
-    # .env 파일에서 카카오 REST API 키를 가져온다.
-    # API 키를 소스 코드에 직접 작성하지 않는다.
     kakao_api_key = os.getenv("KAKAO_API_KEY")
 
-    # 키가 없으면 API 요청을 보내지 않는다.
     if not kakao_api_key:
-        print(
-            "오류: .env 파일에 "
-            "KAKAO_API_KEY가 설정되어 있지 않습니다."
-        )
+        print("오류: .env 파일에 KAKAO_API_KEY가 없습니다.")
         return []
 
-    # 카카오 로컬 키워드 검색 API 주소
-    url = (
-        "https://dapi.kakao.com/"
-        "v2/local/search/keyword.json"
-    )
+    url = "https://dapi.kakao.com/v2/local/search/keyword.json"
 
-    # 카카오 REST API 인증 헤더
     headers = {
         "Authorization": f"KakaoAK {kakao_api_key}"
     }
 
-    # 검색어와 반환할 결과 개수
     params = {
         "query": query,
         "size": min(max(size, 1), 15)
     }
 
+    # 현재 위치가 전달된 경우에만 주변 검색 조건 추가
+    if latitude is not None and longitude is not None:
+        params["x"] = longitude
+        params["y"] = latitude
+        params["radius"] = 5000
+        params["sort"] = "distance"
+
     try:
-        # API 요청을 전송한다.
-        # timeout은 응답을 무한정 기다리지 않도록 제한한다.
         response = requests.get(
             url,
             headers=headers,
@@ -207,30 +198,17 @@ def search_nearby_restaurants(query, size=5):
             timeout=10
         )
 
-        # HTTP 200은 요청이 정상 처리되었음을 의미한다.
         if response.status_code == 200:
-
-            # JSON 응답에서 장소 목록을 추출한다.
             data = response.json()
             places = data.get("documents", [])
-
             print(f"카카오 검색 결과: {len(places)}개")
-
             return places
 
-        # 인증 오류 등의 원인을 확인하기 위해
-        # HTTP 상태 코드와 응답 메시지를 출력한다.
-        print(
-            f"카카오 API 오류: HTTP "
-            f"{response.status_code}"
-        )
-
+        print(f"카카오 API 오류: HTTP {response.status_code}")
         print("오류 상세:", response.text[:500])
-
         return []
 
     except requests.RequestException as e:
-        # 네트워크 연결 실패, 시간 초과 등을 처리한다.
         print(f"카카오 API 요청 실패: {e}")
         return []
 

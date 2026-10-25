@@ -1,31 +1,54 @@
-from pydantic import BaseModel
+
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
-# 여행 추천 요청 DTO (프론트엔드 페이로드 및 기존 필드 통합 지원)
+
+# 1. 여행 추천 요청 DTO
 class RecommendRequest(BaseModel):
     latitude: float
     longitude: float
-    tags: List[str] = []
+
+    # 사용자가 원하는 감정이나 분위기
+    tags: List[str] = Field(default_factory=list)
     query: str
-    # 기존에 사용하던 필드들도 혹시 모를 충돌을 방지하기 위해 Optional로 추가
+
+    # 기존 필드 유지
     destination: Optional[str] = None
     duration: Optional[int] = None
     theme: Optional[str] = None
     companion: Optional[str] = None
 
-# 여행 일정 상세 항목 (코스 한 개)
+    # 추가 여행 조건
+    budget: Optional[int] = None
+    max_distance_km: Optional[float] = None
+
+
+# 2. 여행 일정 상세 항목
 class ScheduleItem(BaseModel):
-    time: str              # 시간대 (예: "10:00 - 12:00")
-    place: str             # 장소 이름
-    description: str       # 활동 내용 및 설명
+    time: str
+    place: str
+    description: str
 
-# 일자별 일정 
+    # 장소 종류: 여행지, 맛집, 카페 등
+    category: str = "기타"
+
+    # 장소 주소와 좌표
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+    # 사용자에게 이 장소를 추천하는 이유
+    recommendation_reason: Optional[str] = None
+
+
+# 3. 일자별 일정
 class DaySchedule(BaseModel):
-    day: int               # 몇 일차 (예: 1, 2)
-    courses: List[ScheduleItem]  # 해당 일자의 코스 목록
+    day: int
+    courses: List[ScheduleItem]
 
-# 여행 추천 응답 DTO
+
+# 4. 여행 추천 응답 DTO
 class RecommendResponse(BaseModel):
-    title: str             # 추천 여행 제목
-    summary: str           # 전체 여행 요약
-    itinerary: List[DaySchedule] # 일자별 코스 목록
+    title: str
+    summary: str
+    itinerary: List[DaySchedule]

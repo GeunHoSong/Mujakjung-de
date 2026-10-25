@@ -134,11 +134,12 @@ def read_root():
 @app.post("/generate")
 def generate(request: TextRequest):
     """
-    [RAG 기반 여행 코스 추천 엔드포인트]
-    - 사용자 입력과 연관된 관광지 정보를 피클 데이터에서 검색 후 Gemini에 전달
-    - 503(과부하/일시적 오류) 발생 시 최대 3회까지 자동 재시도(Retry) 로직 적용
+    RAG 기반 여행 코스 추천 엔드포인트
+    - 관련 관광지 정보를 검색하여 Gemini에 전달
+    - 일시적인 503 오류 발생 시 최대 3회 재시도
     """
     max_retries = 3
+
     for attempt in range(max_retries):
         try:
             # 1. 관련 관광지 데이터 검색 (RAG)
@@ -148,12 +149,13 @@ def generate(request: TextRequest):
             enriched_content = (
                 f"[참고 관광지 데이터]\n{relevant_data}\n\n"
                 f"[사용자 요청]\n{request.content}\n\n"
-                "위의 참고 데이터를 바탕으로 사용자에게 알맞은 국내 여행지 및 맞춤 일정을 친근하고 자세하게 추천해주세요."
+                "위의 참고 데이터를 바탕으로 사용자에게 알맞은 "
+                "국내 여행지 및 맞춤 일정을 친근하고 자세하게 추천해주세요."
             )
 
             print(f"Gemini API 호출 시작... (시도 {attempt + 1})")
-            
-            # 3. Gemini AI 모델 호출 (안정적인 최신 플래시 모델 사용)
+
+            # 3. Gemini 모델 호출
             response = client.models.generate_content(
                 model="gemini-3.8-flash",
                 contents=enriched_content,
@@ -161,25 +163,45 @@ def generate(request: TextRequest):
                     temperature=0.7,
                 )
             )
-            
+
+            # 4. 응답 확인
+            if not response.text:
+                raise ValueError("Gemini가 비어 있는 응답을 반환했습니다.")
+
             print("Gemini API 호출 완료!")
 
-            # 4. 결과 반환
+            # 5. 결과 반환
             return {
                 "analysis_result": response.text
             }
-            
+
         except Exception as e:
             print(f"시도 {attempt + 1} 실패 - 에러: {e}")
 
-            # 503 또는 일시적 서비스 불가 에러 발생 시 0.5초 대기 후 재시도
-            if ("503" in str(e) or "UNAVAILABLE" in str(e)) and attempt < max_retries - 1:
-                time.sleep(0.5)
-                continue       
-            
-            # 마지막 시도까지 실패하면 500 에러 반환
-            if attempt == max_retries - 1:
-                raise HTTPException(status_code=500, detail=str(e))
+            # 일시적인 오류일 때만 재시도
+            error_message = str(e)
+            is_temporary_error = (
+                "503" in error_message
+                or "UNAVAILABLE" in error_message
+            )
+
+            if is_temporary_error and attempt < max_retries - 1:
+                wait_seconds = 2 ** attempt
+                print(f"{wait_seconds}초 후 재시도합니다.")
+                time.sleep(wait_seconds)
+                continue
+
+            # 마지막 시도까지 실패하면 오류 반환
+            raise HTTPException(
+                status_code=503 if is_temporary_error else 500,
+                detail=(
+                    "AI 서비스가 일시적으로 혼잡합니다. "
+                    "잠시 후 다시 시도해 주세요."
+                    if is_temporary_error
+                    else "AI 추천 생성 중 오류가 발생했습니다."
+                )
+            )
+
 
 
 @app.post("/api/v1/schedules/today")

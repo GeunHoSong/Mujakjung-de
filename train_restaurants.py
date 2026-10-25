@@ -150,8 +150,10 @@ def main():
     # 전체 데이터가 아니라 우선 5개만 테스트
     test_restaurants = restaurants[:5]
     embeddings = []
+    total = len(test_restaurants)
 
     for index, item in enumerate(test_restaurants, start=1):
+        print(f"진행 상황: {index}/{total}")
         target_text = (
             f"음식점 이름: {item['name']}\n"
             f"주소: {item['address']}\n"
@@ -192,3 +194,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
