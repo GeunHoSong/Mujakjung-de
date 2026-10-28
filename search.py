@@ -19,7 +19,10 @@ load_dotenv()
 
 # 관광지 임베딩 데이터가 저장된 파일 경로
 # 이 파일은 관광지 정보를 벡터로 변환해 미리 저장한 파일이다.
-EMBEDDINGS_INPUT_PATH = "data/tour_embeddings.pkl"
+EMBEDDINGS_INPUT_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "tour_embeddings.pkl"
+)
 
 # Gemini 클라이언트 초기화
 # google-genai SDK는 기본적으로 GOOGLE_API_KEY 환경 변수를 읽는다.
@@ -159,7 +162,8 @@ def search_nearby_restaurants(
     query,
     size=5,
     latitude=None,
-    longitude=None
+    longitude=None,
+    nearby_only=True
 ):
     """
     카카오 로컬 키워드 검색 API로 장소를 검색한다.
@@ -184,7 +188,7 @@ def search_nearby_restaurants(
     }
 
     # 현재 위치가 전달된 경우에만 주변 검색 조건 추가
-    if latitude is not None and longitude is not None:
+    if nearby_only and latitude is not None and longitude is not None:
         params["x"] = longitude
         params["y"] = latitude
         params["radius"] = 5000
@@ -242,6 +246,7 @@ if __name__ == "__main__":
 
             # 관광지의 원본 데이터
             tour = result["tour"]
+            print("관광지 데이터 필드 ", list(tour.keys()))
 
             # 유사도 점수
             similarity = result["similarity"]
