@@ -177,6 +177,7 @@ def generate(request: TextRequest):
 
         except Exception as e:
             print(f"시도 {attempt + 1} 실패 - 에러: {e}")
+            traceback.print_exc()
 
             # 일시적인 오류일 때만 재시도
             error_message = str(e)
