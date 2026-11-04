@@ -1,16 +1,14 @@
-
 import os
+import time
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
+from openai import AsyncOpenAI
 from schemas.recommend_schema import RecommendRequest, RecommendResponse
 
-# .env 파일에서 환경 변수(API 키 등) 로드
 load_dotenv()
-api_key = os.getenv("GOOGLE_API_KEY")
 
-# 제미나이(Google GenAI) 클라이언트 초기화
-client = genai.Client(api_key=api_key)
+api_key = os.getenv("OPENAI_API_KEY")
+
+client = AsyncOpenAI(api_key=api_key)
 
 
 async def generate_travel_recommendation(
@@ -86,25 +84,41 @@ async def generate_travel_recommendation(
     """
 
 
-    # 3. Gemini 모델 호출 (구조화된 출력 Pydantic 모델 지정)
-    print("Gemini 모델 호출 시작")
+     # 3. OpenAI 모델 호출
+    print("OpenAI 모델 호출 시작")
+    start_time = time.perf_counter()
 
-    response = client.models.generate_content(
-        model="gemini-3.8-flash",
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=RecommendResponse,
-            temperature=0.3,
-        )
+    response = await client.responses.parse(
+        model="gpt-4.1-mini",
+        input=[
+            {
+                "role": "system",
+                "content": (
+                    "당신은 실제 검색 데이터만 사용하는 감성 여행 플래너입니다. "
+                    "사용자가 제공한 장소 목록을 벗어나지 마세요."
+                ),
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ],
+        text_format=RecommendResponse,
+        temperature=0.3,
     )
 
-    # 4. Gemini 응답 확인
-    print("Gemini 응답 수신 완료")
-    print("파싱 결과:", response.parsed)
+    elapsed_time = time.perf_counter() - start_time
 
-    # 5. 파싱된 추천 결과를 호출한 곳으로 반환
-    if response.parsed is None:
-        raise ValueError("Gemini 응답을 RecommendResponse 형식으로 파싱하지 못했습니다.")
+    # 4. OpenAI 응답 확인
+    print(f"OpenAI 응답 수신 완료: {elapsed_time:.2f}초")
+    print(f"검색 장소 수: {len(candidate_places)}개")
+    print(f"프롬프트 길이: {len(prompt)}자")
+    print("파싱 결과:", response.output_parsed)
 
-    return response.parsed
+    # 5. 파싱된 결과 반환
+    if response.output_parsed is None:
+        raise ValueError(
+            "OpenAI 응답을 RecommendResponse 형식으로 파싱하지 못했습니다."
+        )
+
+    return response.output_parsed

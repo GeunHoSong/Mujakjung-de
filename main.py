@@ -9,29 +9,31 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from openai import OpenAI , APIConnectionError, APITimeoutError, RateLimitError
 
-from google import genai
-from google.genai import types
 
 # 외부 라우터 불러오기 (실시간 카카오 맛집 검색 및 AI 큐레이션 담당)
 from routers import recommend
+import traceback
 
 # ==========================================
-# 1. 환경 변수 로드 및 API 키 검증
+# 1. OpenAI API 키 설정
 # ==========================================
 load_dotenv()
-api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 
-print(f"디버깅용 API 키 확인: {api_key[:10] if api_key else '키 없음'}...")
+api_key = os.getenv("OPENAI_API_KEY")
 
 if not api_key:
-    raise ValueError("GEMINI_API_KEY가 설정되어 있지 않습니다. .env 파일을 확인해 주세요.")
+    raise ValueError(
+        "OPENAI_API_KEY가 설정되어 있지 않습니다."
+    )
 
 # ==========================================
-# 2. Google GenAI 클라이언트 초기화
+# 2. OpenAI 클라이언트 초기화
 # ==========================================
-# 최신 google-genai SDK 방식 적용
-client = genai.Client(api_key=api_key)
+client = OpenAI(api_key=api_key)
+
+print("OpenAI 클라이언트 초기화 완료")
 
 # ==========================================
 # 3. FastAPI 애플리케이션 인스턴스 생성 및 설정
@@ -131,76 +133,88 @@ def read_root():
     return {"message": "Mujakjung AI Server is running"}
 
 
+
 @app.post("/generate")
 def generate(request: TextRequest):
     """
-    RAG 기반 여행 코스 추천 엔드포인트
-    - 관련 관광지 정보를 검색하여 Gemini에 전달
-    - 일시적인 503 오류 발생 시 최대 3회 재시도
+    관광지 RAG 데이터를 이용한 OpenAI 여행 추천
     """
     max_retries = 3
 
     for attempt in range(max_retries):
         try:
-            # 1. 관련 관광지 데이터 검색 (RAG)
+            # 1. 관련 관광지 검색
             relevant_data = search_tour_spots(request.content)
 
-            # 2. 프롬프트 조합
+            # 2. 프롬프트 생성
             enriched_content = (
                 f"[참고 관광지 데이터]\n{relevant_data}\n\n"
                 f"[사용자 요청]\n{request.content}\n\n"
-                "위의 참고 데이터를 바탕으로 사용자에게 알맞은 "
-                "국내 여행지 및 맞춤 일정을 친근하고 자세하게 추천해주세요."
+                "참고 관광지 데이터를 바탕으로 "
+                "사용자에게 맞는 국내 여행 코스를 추천해 주세요. "
+                "참고 데이터에 없는 장소는 만들어내지 마세요."
             )
 
-            print(f"Gemini API 호출 시작... (시도 {attempt + 1})")
+            print(f"OpenAI API 호출 시작 (시도 {attempt + 1})")
 
-            # 3. Gemini 모델 호출
-            response = client.models.generate_content(
-                model="gemini-3.8-flash",
-                contents=enriched_content,
-                config=types.GenerateContentConfig(
-                    temperature=0.7,
-                )
+            # 3. OpenAI 모델 호출
+            response = client.responses.create(
+                model="gpt-4.1-mini",
+                input=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "당신은 무작정의 감성 여행 플래너입니다. "
+                            "제공된 관광지 데이터를 바탕으로 "
+                            "여행 일정을 추천합니다."
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": enriched_content
+                    }
+                ],
+                temperature=0.7
             )
 
             # 4. 응답 확인
-            if not response.text:
-                raise ValueError("Gemini가 비어 있는 응답을 반환했습니다.")
+            result = response.output_text
 
-            print("Gemini API 호출 완료!")
+            if not result:
+                raise ValueError("OpenAI 응답이 비어 있습니다.")
 
-            # 5. 결과 반환
+            print("OpenAI API 호출 완료")
+
+            # 5. 기존 응답 형식 유지
             return {
-                "analysis_result": response.text
+                "analysis_result": result
             }
 
-        except Exception as e:
-            print(f"시도 {attempt + 1} 실패 - 에러: {e}")
-            traceback.print_exc()
+        except (APIConnectionError, APITimeoutError) as e:
+            print(f"OpenAI 연결 오류: {e}")
 
-            # 일시적인 오류일 때만 재시도
-            error_message = str(e)
-            is_temporary_error = (
-                "503" in error_message
-                or "UNAVAILABLE" in error_message
-            )
-
-            if is_temporary_error and attempt < max_retries - 1:
-                wait_seconds = 2 ** attempt
-                print(f"{wait_seconds}초 후 재시도합니다.")
-                time.sleep(wait_seconds)
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)
                 continue
 
-            # 마지막 시도까지 실패하면 오류 반환
             raise HTTPException(
-                status_code=503 if is_temporary_error else 500,
-                detail=(
-                    "AI 서비스가 일시적으로 혼잡합니다. "
-                    "잠시 후 다시 시도해 주세요."
-                    if is_temporary_error
-                    else "AI 추천 생성 중 오류가 발생했습니다."
-                )
+                status_code=503,
+                detail="OpenAI 서버 연결에 실패했습니다."
+            )
+
+        except RateLimitError as e:
+            print(f"OpenAI 사용량 또는 결제 한도 오류: {e}")
+            raise HTTPException(
+                status_code=429,
+                detail="OpenAI API 사용량 또는 결제 한도를 확인해 주세요."
+            )
+
+        except Exception as e:
+            print(f"AI 추천 오류: {e}")
+            traceback.print_exc()
+            raise HTTPException(
+                status_code=500,
+                detail="AI 추천 생성 중 오류가 발생했습니다."
             )
 
 

@@ -2,25 +2,25 @@ import csv
 import os
 import pickle
 from dotenv import load_dotenv
-from google import genai
+from openai import OpenAI
 
 # ==========================
 # 1. 환경 변수 로드
 # ==========================
 load_dotenv()
-API_KEY = os.getenv("GOOGLE_API_KEY")
+API_KEY = os.getenv("OPENAI_API_KEY")
 
 if not API_KEY:
-    raise ValueError("GOOGLE_API_KEY가 없습니다.")
+    raise ValueError("OPENAI_API_KEY가 없습니다.")
 
-client = genai.Client(api_key=API_KEY)
+client = OpenAI(api_key=API_KEY)
 
 # ==========================
 # 2. 파일 경로 설정
 # (VS Code 탐색기에 있는 정확한 파일명 확인 필요)
 # ==========================
 DATA_FILE_PATH = "data/전국관광지정보표준데이터.csv"
-EMBEDDINGS_OUTPUT_PATH = "tour_embeddings.pkl"
+EMBEDDINGS_OUTPUT_PATH = "tour_embeddings_openai.pkl"
 
 # ==========================
 # 3. CSV 데이터 읽기
@@ -65,18 +65,24 @@ print(f"총 {len(tour_data)}개의 관광지 데이터를 로드했습니다.")
 # 4. 임베딩 함수 정의
 # ==========================
 def get_embedding(text):
-    text = text.replace("\n", " ")
-    response = client.models.embed_content(
-        model="gemini-embedding-2",  
-        contents=text
+    # 1. 검색 문장 정리
+    text = text.replace("\n", " ").strip()
+
+    # 2. OpenAI 임베딩 생성
+    response = client.embeddings.create(
+        model="text-embedding-3-small",
+        input=text
     )
-    return response.embeddings[0].values
+
+    # 3. 임베딩 벡터 반환
+    return response.data[0].embedding
 
 # ==========================
 # 5. 임베딩 생성 및 저장
 # ==========================
 embeddings = []
 print("임베딩 생성 시작...")
+
 
 for idx, item in enumerate(tour_data):
     target_text = item.get("관광지소개", "") or item.get("관광지명", "")
@@ -103,6 +109,10 @@ for idx, item in enumerate(tour_data):
 # ==========================
 # 6. 파일 저장
 # ==========================
+if len(embeddings) != len(tour_data):
+    raise RuntimeError(
+        f"임베딩 생성 실패: {len(embeddings)}/{len(tour_data)}개 성공"
+    )
 with open(EMBEDDINGS_OUTPUT_PATH, "wb") as f:
     pickle.dump(embeddings, f)
 

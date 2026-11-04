@@ -5,7 +5,7 @@ import numpy as np
 import requests
 
 from dotenv import load_dotenv
-from google import genai
+from openai import OpenAI
 
 
 # ============================================================
@@ -16,17 +16,17 @@ from google import genai
 # 예: GOOGLE_API_KEY=...
 #     KAKAO_API_KEY=...
 load_dotenv()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # 관광지 임베딩 데이터가 저장된 파일 경로
 # 이 파일은 관광지 정보를 벡터로 변환해 미리 저장한 파일이다.
 EMBEDDINGS_INPUT_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "tour_embeddings.pkl"
+    "tour_embeddings_openai.pkl"
 )
 
 # Gemini 클라이언트 초기화
 # google-genai SDK는 기본적으로 GOOGLE_API_KEY 환경 변수를 읽는다.
-client = genai.Client()
 
 
 # ============================================================
@@ -35,7 +35,7 @@ client = genai.Client()
 
 def get_embedding(text):
     """
-    입력받은 검색어를 Gemini 임베딩 모델로 벡터화한다.
+    입력받은 검색어를 OpenAI 임베딩 모델로 벡터화한다.
 
     예:
         입력: "바다와 백사장이 예쁜 섬 여행지"
@@ -45,18 +45,17 @@ def get_embedding(text):
     벡터화되어 있어야 유사도를 비교할 수 있다.
     """
 
-    # 줄바꿈 문자를 제거해 검색어를 정리한다.
+      # 1. 검색어 정리
     text = text.replace("\n", " ").strip()
 
-    # 검색어의 의미를 벡터로 변환한다.
-    response = client.models.embed_content(
-        model="gemini-embedding-2",
-        contents=text
+    # 2. OpenAI 임베딩 생성
+    response = client.embeddings.create(
+        model="text-embedding-3-small",
+        input=text
     )
 
-    # 첫 번째 입력의 임베딩 벡터를 반환한다.
-    return response.embeddings[0].values
-
+    # 3. 생성된 벡터 반환
+    return response.data[0].embedding
 
 # ============================================================
 # 2. 코사인 유사도를 계산하는 함수
@@ -90,7 +89,7 @@ def cosine_similarity(a, b):
 # 3. 관광지 RAG 검색 함수
 # ============================================================
 
-def search_tour(query, top_k=3):
+def search_tour(query, top_k=3 , tags=None):
     """
     사용자의 검색어와 의미적으로 비슷한 관광지를 찾는다.
 
@@ -98,8 +97,9 @@ def search_tour(query, top_k=3):
     관련 정보를 검색한 뒤, 그 정보를 AI 답변 생성에
     활용하는 방식이다.
 
-    이 함수는 검색 단계만 담당하며,
-    Gemini가 최종 추천 문장을 생성하지는 않는다.
+   이 함수는 관광지 검색 단계만 담당한다.
+    OpenAI를 이용한 최종 여행 일정 생성은
+    별도의 AI 서비스에서 처리한다.
 
     매개변수:
         query: 사용자가 입력한 검색어
@@ -120,8 +120,19 @@ def search_tour(query, top_k=3):
     with open(EMBEDDINGS_INPUT_PATH, "rb") as f:
         embedding_data = pickle.load(f)
 
-    # 검색어를 벡터로 변환한다.
+     # 1. 여행 조건을 벡터로 변환
     query_vector = get_embedding(query)
+
+    # 2. 감정 태그 초기화
+    tag_vector = None
+
+    # 3. 감정 태그가 있다면 벡터로 변환
+    if tags:
+        tag_text = " ".join(tags)
+        tag_vector = get_embedding(tag_text)
+
+   
+   
 
     results = []
 
@@ -132,11 +143,23 @@ def search_tour(query, top_k=3):
         tour_vector = item["embedding"]
 
         # 검색어와 관광지의 의미적 유사도를 계산한다.
-        similarity = cosine_similarity(
+        travel_score = cosine_similarity(
             query_vector,
             tour_vector
         )
-
+        # 감정 태그 가 있는지 확인 
+        if tag_vector is not None:
+            # 감정태그 와 관광지 유사도 계산 
+            embedding_score =cosine_similarity(
+                tag_vector,
+                tour_vector
+            )
+            # 여행 조건 70% 감정 30%
+            similarity = travel_score *0.7 +embedding_score *0.3
+        else :
+            #감정 태그 없으면 여행 조건만 반영 
+            similarity = travel_score
+            
         # 원본 관광지 정보와 유사도 점수를 함께 저장한다.
         results.append({
             "tour": item["data"],
@@ -228,7 +251,7 @@ if __name__ == "__main__":
     # --------------------------------------------------------
 
     # 사용자가 여행지에 관해 입력했다고 가정한 검색어
-    query = "바다와 백사장이 예쁜 섬 여행지"
+    query = "번아웃 와서 조용한 곳에서 쉬고 싶어"
 
     print(f"관광지 검색어: {query}")
     print("=" * 50)
@@ -237,7 +260,8 @@ if __name__ == "__main__":
         # 의미적으로 유사한 관광지 3개를 검색한다.
         top_results = search_tour(
             query=query,
-            top_k=3
+            top_k=3,
+            tags=["조용한 곳", "사색·휴식"]
         )
 
         print("[관광지 RAG 검색 결과]")
@@ -270,18 +294,26 @@ if __name__ == "__main__":
         print(f"관광지 데이터 파일 오류: {e}")
 
     except Exception as e:
-        # Gemini 인증, 임베딩 모델, 데이터 형식 등의
-        # 오류를 확인하기 위한 기본 예외 처리다.
-        print(f"관광지 RAG 검색 오류: {e}")
+        import traceback
+        traceback.print_exc()
 
     print("=" * 50)
 
     # --------------------------------------------------------
     # B. 카카오 맛집 검색 테스트
     # --------------------------------------------------------
+    if top_results:
+        best_tour = top_results[0]["tour"]
+        address = best_tour.get("소재지도로명주소", "")
+        address_parts = address.split()
 
-    # 제주도 맛집을 검색한다.
-    restaurant_query = "제주도 맛집"
+        if len(address_parts) >= 2:
+            region = address_parts[1]
+            restaurant_query = f"{region} 맛집"
+        else:
+            restaurant_query = "맛집"
+    else:
+        restaurant_query = "맛집"
 
     print(f"맛집 검색어: {restaurant_query}")
     print("=" * 50)
