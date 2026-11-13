@@ -52,8 +52,6 @@ async def debug_chat(request: Request):
 
     # FastAPI 콘솔에 출력
     print("요청 본문:", repr(body))
-    print("Content-Type:", request.headers.get("content-type"))
-
     return {
         "body": body.decode("utf-8", errors="replace"),
         "content_type": request.headers.get("content-type")

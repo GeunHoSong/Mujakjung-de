@@ -10,11 +10,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI , APIConnectionError, APITimeoutError, RateLimitError
-
+from routers.emotion import router as emotion_router
 
 # 외부 라우터 불러오기 (실시간 카카오 맛집 검색 및 AI 큐레이션 담당)
 from routers import recommend
 import traceback
+from routers import chat
 
 # ==========================================
 # 1. OpenAI API 키 설정
@@ -43,9 +44,11 @@ app = FastAPI(
     version="1.0.0",
     description="무작정 여행 서비스 AI 및 일정 관리 백엔드 서버"
 )
-
-# 라우터 등록 (routers/recommend.py 연결)
+app.include_router(emotion_router)
+# AI 여행 추천 라우터
 app.include_router(recommend.router)
+# AI 채팅 상담 라우터
+app.include_router(chat.router)
 
 # CORS 설정 (프론트엔드 연동을 위한 모든 오리진 허용)
 app.add_middleware(

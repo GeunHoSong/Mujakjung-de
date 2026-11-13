@@ -1,0 +1,183 @@
+
+{
+  "JOY": {
+    "name": "기쁨",
+    "emotions": [
+      {
+        "code": "JOY_01",
+        "name": "행복",
+        "description": "즐겁고 기분이 좋은 상태"
+      },
+      {
+        "code": "JOY_02",
+        "name": "설렘",
+        "description": "새로운 경험에 대한 기대감"
+      },
+      {
+        "code": "JOY_03",
+        "name": "만족",
+        "description": "현재 상황에 대한 긍정적인 평가"
+      },
+      {
+        "code": "JOY_04",
+        "name": "감사",
+        "description": "누군가에게 고마움을 느끼는 상태"
+      },
+      {
+        "code": "JOY_05",
+        "name": "희망",
+        "description": "미래가 좋아질 것이라는 기대"
+      }
+    ]
+  },
+  "SAD": {
+    "name": "슬픔",
+    "emotions": [
+      {
+        "code": "SAD_01",
+        "name": "외로움",
+        "description": "정서적 연결이 부족하다고 느끼는 상태"
+      },
+      {
+        "code": "SAD_02",
+        "name": "공허함",
+        "description": "마음이 비어 있고 의미가 부족한 상태"
+      },
+      {
+        "code": "SAD_03",
+        "name": "그리움",
+        "description": "사람이나 과거를 다시 만나고 싶은 감정"
+      },
+      {
+        "code": "SAD_04",
+        "name": "상실감",
+        "description": "소중한 것을 잃었다고 느끼는 감정"
+      },
+      {
+        "code": "SAD_05",
+        "name": "무기력",
+        "description": "의욕이나 에너지가 떨어진 상태"
+      }
+    ]
+  },
+  "ANX": {
+    "name": "불안",
+    "emotions": [
+      {
+        "code": "ANX_01",
+        "name": "걱정",
+        "description": "좋지 않은 일이 생길까 염려하는 상태"
+      },
+      {
+        "code": "ANX_02",
+        "name": "두려움",
+        "description": "위험하거나 무서운 상황을 느끼는 상태"
+      },
+      {
+        "code": "ANX_03",
+        "name": "초조함",
+        "description": "마음이 조급하고 불안정한 상태"
+      },
+      {
+        "code": "ANX_04",
+        "name": "긴장",
+        "description": "중요한 상황을 앞두고 신경이 예민해진 상태"
+      },
+      {
+        "code": "ANX_05",
+        "name": "불확실성 불안",
+        "description": "미래를 예측할 수 없어 불안한 상태"
+      }
+    ]
+  },
+  "ANG": {
+    "name": "분노",
+    "emotions": [
+      {
+        "code": "ANG_01",
+        "name": "짜증",
+        "description": "사소한 일에도 불쾌함을 느끼는 상태"
+      },
+      {
+        "code": "ANG_02",
+        "name": "억울함",
+        "description": "부당한 대우를 받았다고 느끼는 상태"
+      },
+      {
+        "code": "ANG_03",
+        "name": "분개",
+        "description": "부당하거나 잘못된 상황에 강한 분노를 느끼는 상태"
+      },
+      {
+        "code": "ANG_04",
+        "name": "답답함",
+        "description": "상황이 해결되지 않아 막막한 상태"
+      },
+      {
+        "code": "ANG_05",
+        "name": "좌절감",
+        "description": "원하는 결과를 얻지 못해 의욕이 꺾인 상태"
+      }
+    ]
+  },
+  "HURT": {
+    "name": "상처",
+    "emotions": [
+      {
+        "code": "HURT_01",
+        "name": "배신감",
+        "description": "믿었던 사람에게 신뢰를 잃었다고 느끼는 상태"
+      },
+      {
+        "code": "HURT_02",
+        "name": "서운함",
+        "description": "기대했던 관심이나 배려를 받지 못해 속상한 상태"
+      },
+      {
+        "code": "HURT_03",
+        "name": "소외감",
+        "description": "다른 사람들에게서 제외되거나 혼자라고 느끼는 상태"
+      },
+      {
+        "code": "HURT_04",
+        "name": "거절감",
+        "description": "자신이 받아들여지지 않았다고 느끼는 상태"
+      },
+      {
+        "code": "HURT_05",
+        "name": "수치심",
+        "description": "자신의 모습이나 행동이 부끄럽게 느껴지는 상태"
+      }
+    ]
+  },
+  "EMB": {
+    "name": "당황",
+    "emotions": [
+      {
+        "code": "EMB_01",
+        "name": "혼란",
+        "description": "상황을 이해하기 어려워 혼란스러운 상태"
+      },
+      {
+        "code": "EMB_02",
+        "name": "난처함",
+        "description": "어떻게 행동해야 할지 몰라 곤란한 상태"
+      },
+      {
+        "code": "EMB_03",
+        "name": "민망함",
+        "description": "예상치 못한 상황에서 부끄러움을 느끼는 상태"
+      },
+      {
+        "code": "EMB_04",
+        "name": "충격",
+        "description": "갑작스러운 사건으로 크게 놀란 상태"
+      },
+      {
+        "code": "EMB_05",
+        "name": "어색함",
+        "description": "낯선 상황이나 관계에서 불편함을 느끼는 상태"
+      }
+    ]
+  }
+}
