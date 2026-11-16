@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI , APIConnectionError, APITimeoutError, RateLimitError
 from routers.emotion import router as emotion_router
+from services.emotion_service import analyze_emotion
 
 # 외부 라우터 불러오기 (실시간 카카오 맛집 검색 및 AI 큐레이션 담당)
 from routers import recommend
@@ -146,15 +147,31 @@ def generate(request: TextRequest):
 
     for attempt in range(max_retries):
         try:
+            emotion_result = analyze_emotion(request.content)
+            #감정 분석 결과 확인 
+            print("감정 분석 결과", emotion_result)
             # 1. 관련 관광지 검색
             relevant_data = search_tour_spots(request.content)
 
             # 2. 프롬프트 생성
             enriched_content = (
                 f"[참고 관광지 데이터]\n{relevant_data}\n\n"
+
+                f"[사용자 감정 분석 결과]\n"
+                f"{emotion_result['emotions']}\n\n"
+
+                f"[감정 분석 이유]\n"
+                f"{emotion_result['reason']}\n\n"
+
                 f"[사용자 요청]\n{request.content}\n\n"
-                "참고 관광지 데이터를 바탕으로 "
-                "사용자에게 맞는 국내 여행 코스를 추천해 주세요. "
+
+                "사용자의 감정 상태를 고려하여 "
+                "어울리는 국내 여행 코스를 추천해 주세요. "
+                "사용자가 불안하거나 지쳐 있다면 "
+                "부담이 적고 편안한 여행을 우선 고려하세요. "
+                "사용자가 즐겁거나 설레는 상태라면 "
+                "활동적인 여행도 고려할 수 있습니다. "
+                "사용자의 요청과 선호를 우선 존중하세요. "
                 "참고 데이터에 없는 장소는 만들어내지 마세요."
             )
 
