@@ -1,4 +1,4 @@
-
+﻿
 # ============================================================
 # 1. 필요한 라이브러리 및 함수 가져오기
 # ============================================================
@@ -20,6 +20,7 @@ from services.geo_service import optimize_route, calculate_distance
 # 공공데이터 기반 장소 검색
 from services.public_data_service import search_public_recommendations
 
+from services.emotion_service import analyze_emotion
 
 # ============================================================
 # 2. API 라우터 설정
@@ -95,6 +96,15 @@ def convert_kakao_place(place: dict) -> dict:
 async def recommend_travel_course(request: RecommendRequest):
 
     try:
+        emotion_reuslt  = analyze_emotion(request.query)
+        request.emotions =[
+            emotion["code"]
+            for emotion in emotion_reuslt.get("emotions", [])
+        ]
+
+        request.emotion_reason = emotion_reuslt.get("reason")
+        print("감정 분석 결과 확인", emotion_reuslt)
+
         # ----------------------------------------------------
         # 5-1. 사용자 입력 정보 가져오기
         # ---------------------------------------------------- 

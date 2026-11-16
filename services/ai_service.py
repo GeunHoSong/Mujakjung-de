@@ -83,6 +83,8 @@ async def generate_travel_recommendation(
     - 여행 테마: {request.theme or "미지정"}
     - 동행인: {request.companion or "미지정"}
     - 감정 및 요청: {request.query}
+    - 분석된 감정 코드: {",".join(request.emotions) if request.emotions else "분석 결과 없음"}
+    - 감정 분석 코드 : {request.emotion_reason or "분석 결과 없음"}
     - 분위기 태그: {", ".join(request.tags) if request.tags else "미지정"}
     - 예산: {getattr(request, "budget", None) or "미지정"}
     - 최대 이동 거리(km): {getattr(request, "max_distance_km", None) or "미지정"}
