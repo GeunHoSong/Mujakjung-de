@@ -96,14 +96,26 @@ def convert_kakao_place(place: dict) -> dict:
 async def recommend_travel_course(request: RecommendRequest):
 
     try:
-        emotion_reuslt  = analyze_emotion(request.query)
-        request.emotions =[
+        # 사용자 문장 감정 분석
+        emotion_result = analyze_emotion(request.query)
+
+        # 감정 코드 추출
+        request.emotions = [
             emotion["code"]
-            for emotion in emotion_reuslt.get("emotions", [])
+            for emotion in emotion_result.get("emotions", [])
         ]
 
-        request.emotion_reason = emotion_reuslt.get("reason")
-        print("감정 분석 결과 확인", emotion_reuslt)
+        # 감정 판단 이유 저장
+        request.emotion_reason = emotion_result.get("reason")
+
+        # 감정 이름 추출
+        emotion_names = [
+            emotion["name"]
+            for emotion in emotion_result.get("emotions", [])
+        ]
+
+        print("감정 분석 결과 확인:", emotion_result)
+        print("분석된 감정 이름:", emotion_names)
 
         # ----------------------------------------------------
         # 5-1. 사용자 입력 정보 가져오기
@@ -131,9 +143,10 @@ async def recommend_travel_course(request: RecommendRequest):
 
         # 관광지 임베딩을 이용하여 관련 관광지 3개 검색
         # 기존 search_tour의 유사도 계산 방식 활용
+        combined_tags = selected_tags + emotion_names
         tour_results = search_tour(
             query=request.query,
-            top_k=3,
+            top_k=20,
             tags=selected_tags
         )
 
@@ -189,6 +202,25 @@ async def recommend_travel_course(request: RecommendRequest):
 
             # 관광지 좌표 연결 성공
             if matched_tour:
+                # 사용자 위치에서 관광까지 거리 거리 계산(km)
+                distance_from_user = calculate_distance(
+                    request.latitude,
+                    request.longitude, 
+                    float(matched_tour["y"]),
+                    float(matched_tour["x"])
+                )
+
+                #사용자가 설정한 최대 이동 거리 확인
+                max_distance = request.max_distance_km
+                # 최대 이동걸이 초괴하면 추천 후보에서 제외 
+                if max_distance is not None and max_distance> 0:
+                    if distance_from_user > max_distance:
+                        print(
+                            f"거리 초과 관광지 제외: {tour_name}"
+                            f"({distance_from_user:.2f}km)"
+                        )
+                        continue
+
 
                 tour_place = {
                     "name": tour_name,
@@ -468,12 +500,12 @@ async def recommend_travel_course(request: RecommendRequest):
 
 
     # 의도적으로 발생시킨 HTTP 오류는 그대로 전달
+    # 의도적으로 발생시킨 HTTP 오류는 그대로 전달
     except HTTPException:
         raise
 
     # 그 외 예외 처리
     except Exception as e:
-
         print(f"AI 코스 추천 중 오류 발생 상세: {e}")
 
         raise HTTPException(

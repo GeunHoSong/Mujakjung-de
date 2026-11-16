@@ -1,16 +1,25 @@
-
-import os
+import json
 import pickle
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-file_path = os.path.join(
-    BASE_DIR, "restaurant_embeddings_test.pkl"
-)
+# 기존 관광지 임베딩 파일 확인 
+file_path = "data/tour_data_embedding.json"
 
-with open(file_path, "rb") as file:
-    embeddings = pickle.load(file)
+with open(file_path , "r" , encoding="utf-8") as f :
+    data = json.load(f)
+print("데이터 타입" , type(data).__name__)
+print("전체 데이터 개수" , len(data))
 
-print("저장된 음식점 수:", len(embeddings))
-print("첫 번째 음식점:", embeddings[0]["data"]["name"])
-print("벡터 숫자 개수:", len(embeddings[0]["embedding"]))
-print("벡터 앞부분:", embeddings[0]["embedding"][:5])
+#첫번째 관광지 확인 
+first = data[0]
+
+print("첫번째 데이터 필드", list(first.keys()))
+
+embedding = first.get("embedding", [])
+
+print("임베딩 차원", len(embedding))
+print("임베딩 앞 5개 값" ,  embedding[:5])
+
+with open("tour_embeddings_openai.pkl", "rb") as f:
+    tour_data = pickle.load(f)
+print("실제 RAG 관광지 개수: " , len(tour_data))
+print("실제 임베딩 차원:", len(tour_data[0]["embedding"]))

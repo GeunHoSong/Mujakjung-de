@@ -156,14 +156,17 @@ def search_tour(query, top_k=3 , tags=None):
             )
             # 여행 조건 70% 감정 30%
             similarity = travel_score *0.7 +embedding_score *0.3
+            
         else :
             #감정 태그 없으면 여행 조건만 반영 
             similarity = travel_score
             
         # 원본 관광지 정보와 유사도 점수를 함께 저장한다.
         results.append({
-            "tour": item["data"],
-            "similarity": similarity
+           "tour": item["data"],
+           "similarity": similarity,
+           "travel_score": travel_score,
+           "emotion_score": embedding_score if tag_vector is not  None else None
         })
 
     # 유사도가 높은 관광지부터 정렬한다.
@@ -171,6 +174,19 @@ def search_tour(query, top_k=3 , tags=None):
         key=lambda item: item["similarity"],
         reverse=True
     )
+    # 개발 테스트용: 상위 관광지 3곳 확인 
+    print("\n [상위 관광지 추천 결과]")
+    for result in results[:top_k]:
+        tour_name = result["tour"].get("관광지명", "정보명 없음")
+        travel = result["travel_score"]
+        emotion = result["emotion_score"]
+        final = result["similarity"]
+
+        print(f"\n관광지명:{tour_name}" )
+        print(f"여행 점수: {travel:.4f}")
+        if emotion is not None:
+            print(f"감정 점수: {emotion:.4f}")
+        print(f"최종 점수{final:.4f}")
 
     # 상위 top_k개만 반환한다.
     return results[:top_k]
