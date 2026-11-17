@@ -143,11 +143,18 @@ async def recommend_travel_course(request: RecommendRequest):
 
         # 관광지 임베딩을 이용하여 관련 관광지 3개 검색
         # 기존 search_tour의 유사도 계산 방식 활용
+
         combined_tags = selected_tags + emotion_names
+        destination_query =(
+            f"{request.destination} {request.query}"
+            if request.destination
+            else request.query
+        )
+
         tour_results = search_tour(
-            query=request.query,
+            query=destination_query,
             top_k=20,
-            tags=selected_tags
+            tags=combined_tags
         )
 
         # 최종적으로 AI에 전달할 장소 목록
@@ -173,6 +180,16 @@ async def recommend_travel_course(request: RecommendRequest):
             # 관광지 이름이 없으면 다음 결과로 이동
             if not tour_name:
                 continue
+            # 사용자가 목적지를 지정했다면 해당 지역 관광지만 선택
+            if request.destination:
+                destination = request.destination.strip()
+                address = tour_address or ""
+
+                if destination not in address:
+                    print(f"목적지 불일치 관광지 제외: {tour_name}")
+                    continue
+
+
 
             # 카카오 API에서 관광지 이름 검색
             # 이 단계는 좌표 확인을 위한 이름 검색이므로

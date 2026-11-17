@@ -3,24 +3,6 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 
-# 1. 여행 추천 요청 DTO
-class RecommendRequest(BaseModel):
-    latitude: float
-    longitude: float
-
-    # 사용자가 원하는 감정이나 분위기
-    tags: List[str] = Field(default_factory=list)
-    query: str
-
-    # 기존 필드 유지
-    destination: Optional[str] = None
-    duration: Optional[int] = None
-    theme: Optional[str] = None
-    companion: Optional[str] = None
-
-    # 추가 여행 조건
-    budget: Optional[int] = None
-    max_distance_km: Optional[float] = None
 
 
 class RecommendRequest(BaseModel):
