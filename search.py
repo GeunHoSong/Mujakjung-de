@@ -89,7 +89,7 @@ def cosine_similarity(a, b):
 # 3. 관광지 RAG 검색 함수
 # ============================================================
 
-def search_tour(query, top_k=3 , tags=None):
+def search_tour(query, top_k=3 , tags=None, destination=None):
     """
     사용자의 검색어와 의미적으로 비슷한 관광지를 찾는다.
 
@@ -135,10 +135,40 @@ def search_tour(query, top_k=3 , tags=None):
    
 
     results = []
-
+    # 전체 관광지 데이터 개수 확인
+    print("전체 관광지 수 :" , len(embedding_data))
+    
+           
+    #인천 관광지 개수 확인 
+    incheon_count = sum (
+        1
+        for item in embedding_data
+        if "인천" in str(item["data"])
+    )
+    print("인천 관광지 개수", incheon_count)
+    incheon_count_address = sum(
+        1 
+        for item in embedding_data
+        if "인천" in str (
+            item["data"].get("소재지도로명주소") or ""
+        )
+    )
+    print("인천 주소 기준 관광지 수", incheon_count_address)
     # 저장된 모든 관광지를 하나씩 비교한다.
     for item in embedding_data:
+        
+        # 관광지 원본 데이터 가져오기 
+        tour = item["data"]
 
+        # 관광지 주소 가져 오기
+        tour_address = tour.get("소재지도로명주소") or ""
+
+        # 사용자가 선택한 목적지 확인 
+        if destination:
+            destination_name = destination.strip()
+            # 목적지와 관광지 주소가 일치 하지 않으면 제외 
+            if destination_name not in tour_address:
+                continue
         # 해당 관광지의 임베딩 벡터
         tour_vector = item["embedding"]
 

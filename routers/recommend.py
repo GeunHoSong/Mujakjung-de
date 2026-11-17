@@ -154,7 +154,8 @@ async def recommend_travel_course(request: RecommendRequest):
         tour_results = search_tour(
             query=destination_query,
             top_k=20,
-            tags=combined_tags
+            tags=combined_tags,
+            destination= request.destination
         )
 
         # 최종적으로 AI에 전달할 장소 목록
