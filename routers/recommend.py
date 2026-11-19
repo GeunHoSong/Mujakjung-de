@@ -124,6 +124,13 @@ async def recommend_travel_course(request: RecommendRequest):
 
         # 사용자가 선택한 감정 및 분위기 태그
         selected_tags = request.tags or []
+        destination= request.destination
+        if not destination:
+            if"부산" in request.query:
+                destination = "부산"
+            elif "당진" in request.query:
+                destination="당진"
+        print("최종 목적지:", destination)
 
         # 감정 문장과 태그를 검색어로 변환
         search_keyword = make_search_keyword(
@@ -134,6 +141,7 @@ async def recommend_travel_course(request: RecommendRequest):
         # 개발 중 확인용 로그
         print("사용자 요청:", request.query)
         print("선택한 태그:", selected_tags)
+        print("전달된 목적지:", repr(request.destination))
         print("최종 검색어:", search_keyword)
 
 
@@ -147,7 +155,7 @@ async def recommend_travel_course(request: RecommendRequest):
         combined_tags = selected_tags + emotion_names
         destination_query =(
             f"{request.destination} {request.query}"
-            if request.destination
+            if destination
             else request.query
         )
 
@@ -155,7 +163,7 @@ async def recommend_travel_course(request: RecommendRequest):
             query=destination_query,
             top_k=20,
             tags=combined_tags,
-            destination= request.destination
+            destination= destination
         )
 
         # 최종적으로 AI에 전달할 장소 목록
@@ -183,7 +191,6 @@ async def recommend_travel_course(request: RecommendRequest):
                 continue
             # 사용자가 목적지를 지정했다면 해당 지역 관광지만 선택
             if request.destination:
-                destination = request.destination.strip()
                 address = tour_address or ""
 
                 if destination not in address:

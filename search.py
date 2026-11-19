@@ -88,7 +88,20 @@ def cosine_similarity(a, b):
 # ============================================================
 # 3. 관광지 RAG 검색 함수
 # ============================================================
-
+def classify_tour(tour):
+    tour_name = tour.get("관광지명") or ""
+    famous_places = [
+        "해운대해수욕장",
+        "광안리해수욕장",
+        "송도해수욕장",
+        "다대포해수욕장"
+    ]
+    hidden_places = []
+    if tour_name in famous_places:
+        return "famous"
+    if tour_name in hidden_places:
+        return "hidden"
+    return "unclassified"
 def search_tour(query, top_k=3 , tags=None, destination=None):
     """
     사용자의 검색어와 의미적으로 비슷한 관광지를 찾는다.
@@ -171,8 +184,35 @@ def search_tour(query, top_k=3 , tags=None, destination=None):
                 continue
         # 해당 관광지의 임베딩 벡터
         tour_vector = item["embedding"]
+        # 사용자 요청에서 바다 여행 추향 확인 
+        sea_keywords=["바다", "해변", "해수욕장", "해안" ]
+        # 관광지 이름 가져오기 
+        tour_name = tour.get("관광지명") or ""
+        tour_description = tour.get("관광지소개") or ""
+        travel_keywords = {
+            "sea":["바다", "해변", "해수욕장", "해안"],
+            "mountain": ["등산", "산행", "트레킹", "산 정상"],
+            "forest": ["숲", "자연휴양림", "수목원"],
+            "history": ["역사","유적", "궁궐", "박물관"], 
+            "city": ["도시", "쇼핑", "변화가"]
+        }
+        preference_score= 0.0
+        # 여행 유형별 키워드 비교
+        for category, keywords in travel_keywords.items():
 
-        # 검색어와 관광지의 의미적 유사도를 계산한다.
+        # 사용자가 원하는 여행 유형인지 확인
+            if any(keyword in query for keyword in keywords):
+
+                # 관광지 이름과 소개를 합쳐서 검색
+                tour_text = tour_name + " " + tour_description
+
+                    # 관광지 이름과 소개에서 키워드 확인
+                if any(keyword in tour_name for keyword in keywords):
+                    preference_score = 1.0
+                elif any(keyword in  tour_description for keyword in keywords):
+                    preference_score = 0.3
+                break
+        
         travel_score = cosine_similarity(
             query_vector,
             tour_vector
@@ -185,15 +225,23 @@ def search_tour(query, top_k=3 , tags=None, destination=None):
                 tour_vector
             )
             # 여행 조건 70% 감정 30%
-            similarity = travel_score *0.7 +embedding_score *0.3
+            similarity =(
+                travel_score *0.6
+                + embedding_score *0.2
+                + preference_score *0.2
+            )
             
         else :
             #감정 태그 없으면 여행 조건만 반영 
-            similarity = travel_score
+            similarity = (
+                travel_score *0.8
+                + preference_score *0.2
+            )
             
         # 원본 관광지 정보와 유사도 점수를 함께 저장한다.
         results.append({
            "tour": item["data"],
+           "tour_type": classify_tour(tour),
            "similarity": similarity,
            "travel_score": travel_score,
            "emotion_score": embedding_score if tag_vector is not  None else None
@@ -204,6 +252,14 @@ def search_tour(query, top_k=3 , tags=None, destination=None):
         key=lambda item: item["similarity"],
         reverse=True
     )
+    unclassified_resul = [
+        result 
+        for result in results
+        if result["tour_type"] == "unclassified"
+    ]
+    print("\n [미분류 관광지 상위5곳]")
+    for result  in unclassified_resul[:5]:
+        print(result["tour"]["관광지명"])
     # 개발 테스트용: 상위 관광지 3곳 확인 
     print("\n [상위 관광지 추천 결과]")
     for result in results[:top_k]:
@@ -211,12 +267,16 @@ def search_tour(query, top_k=3 , tags=None, destination=None):
         travel = result["travel_score"]
         emotion = result["emotion_score"]
         final = result["similarity"]
+        
 
         print(f"\n관광지명:{tour_name}" )
+        tour_type= result["tour_type"]
+        print(f"관광지 유형: {tour_type}")
         print(f"여행 점수: {travel:.4f}")
         if emotion is not None:
             print(f"감정 점수: {emotion:.4f}")
         print(f"최종 점수{final:.4f}")
+        print(f"관광지 소개: {result["tour"].get('관광지소개', '')}")
 
     # 상위 top_k개만 반환한다.
     return results[:top_k]
@@ -297,7 +357,7 @@ if __name__ == "__main__":
     # --------------------------------------------------------
 
     # 사용자가 여행지에 관해 입력했다고 가정한 검색어
-    query = "번아웃 와서 조용한 곳에서 쉬고 싶어"
+    query = "부산에서 바다를 보며 힐링하고 싶어"
 
     print(f"관광지 검색어: {query}")
     print("=" * 50)
@@ -306,8 +366,9 @@ if __name__ == "__main__":
         # 의미적으로 유사한 관광지 3개를 검색한다.
         top_results = search_tour(
             query=query,
-            top_k=3,
-            tags=["조용한 곳", "사색·휴식"]
+            top_k=10,
+            tags=["힐링", "휴식"],
+            destination="부산"
         )
 
         print("[관광지 RAG 검색 결과]")
@@ -395,3 +456,8 @@ if __name__ == "__main__":
     else:
         print("검색된 맛집이 없습니다.")
         print("카카오 API 키와 검색어를 확인해 주세요.")
+print("\n[관광지 분류 테스트]")
+
+test_tour = {"관광지명": "달음산자연휴양림"}
+
+print(classify_tour(test_tour))
