@@ -41,3 +41,15 @@ existing_ids = [tour["id"] for tour in tour_data ]
 print("전체 ID 개수:" , len(existing_ids))
 print("고유 ID 개수:", len(set(existing_ids)))
 print("가장 큰 ID:", max(existing_ids))
+
+
+# 신규 숨은 여행지 임베딩 확인
+with open("hidden_tour_embeddings.pkl", "rb") as f:
+    hidden_data = pickle.load(f)
+
+print("신규 임베딩 개수:", len(hidden_data))
+print("신규 임베딩 차원:", len(hidden_data[0]["embedding"]))
+# print("첫 번째 신규 ID:", hidden_data[0]["id"])
+# print("마지막 신규 ID:", hidden_data[-1]["id"])
+print("신규 데이터 최상위키 :", list(hidden_data[0].keys()))
+print("첫 번째 데이터 자료형:", type(hidden_data[0]).__name__)

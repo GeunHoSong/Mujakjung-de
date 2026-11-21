@@ -111,3 +111,45 @@ remaining_tours =[
 
 print("완료된 관광지 수:", len(completed_ids))
 print("남은 관광지 수:", len(remaining_tours))
+
+# 관광지 임베딩 생성 함수 
+def create_tour_embedding(tour):
+    data = tour["data"]
+
+    text= (
+        f"관광지명: {data['관광지명']}\n"
+        f"주소: {data['소재지도로명주소']}\n"
+        f"소개:{data['관광지소개']}"
+    )
+    response = client.embeddings.create(
+        model="text-embedding-3-small",
+        input= text
+    )
+    return response.data[0].embedding
+
+
+# 남은 숨은 여행지 임베딩 생성 및 저장
+for tour in remaining_tours:
+    try:
+        embedding_vector = create_tour_embedding(tour)
+        # 기존 RAG와 같은 구조로 저장
+        hidden_embeddings.append({
+             "id": tour["id"], 
+            "data": tour["data"],
+            "embedding": embedding_vector
+        })
+        # 관광지 하나가 완료될 때마다 파일 저장
+        temp_path = HIDDEN_EMBEDDINGS_PATH + ".tmp"
+
+        with open(temp_path, "wb") as f:
+            pickle.dump(hidden_embeddings, f)
+
+        os.replace(temp_path, HIDDEN_EMBEDDINGS_PATH)
+        print(
+            f"임베딩 완료: {tour['data']['관광지명']}"
+            f"({len(hidden_embeddings)}/104)"
+        )
+    except Exception as e:
+        print(f"임베딩 오류:{tour['data']['관광지명']}- {e}" )
+        break
+print("최종 저장된 임베딩 수:", len(hidden_embeddings))
