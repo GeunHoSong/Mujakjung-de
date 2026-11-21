@@ -98,14 +98,14 @@ else :
 print("저장된 임베딩 개수:", len(hidden_embeddings))
 
 # 이미 저장된 관광지 ID 확인 
-completed_ids =(
+completed_ids ={
     item["id"]
     for item  in hidden_embeddings
-)
+}
 
 # 아직 임베딩 하지 않은 관광지 만 선택 
 remaining_tours =[
-    tuors for tour in new_tour_with_id
+    tour for tour in new_tour_with_id
     if tour["id"] not in completed_ids
 ]
 
