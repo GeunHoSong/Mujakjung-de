@@ -65,6 +65,11 @@ with open(file_path, "r", encoding="cp949", newline="") as f:
         tour for tour in hidden_tours
         if tour["관광지명"].strip() in new_names
     ]
+    # 주소가 누락돤 황강 마실길 주소 보안 
+    for tour in new_tours:
+        if "황강 마실길" in tour["관광지명"]:
+            tour["주소"] ="경상남도 합천군 합천읍 황강체육공원로 93"
+            print("주소 보완 완료", tour["관광지명"])
 
     # 신규 관광지 csv 파일 저장 
     output_path = os.path.join(
