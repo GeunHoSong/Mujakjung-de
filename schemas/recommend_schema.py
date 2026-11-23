@@ -45,7 +45,7 @@ class ScheduleItem(BaseModel):
 
     # 사용자에게 이 장소를 추천하는 이유
     recommendation_reason: Optional[str] = None
-
+    image_url: Optional[str] = None
 
 # 3. 일자별 일정
 class DaySchedule(BaseModel):

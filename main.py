@@ -12,11 +12,13 @@ from pydantic import BaseModel
 from openai import OpenAI , APIConnectionError, APITimeoutError, RateLimitError
 from routers.emotion import router as emotion_router
 from services.emotion_service import analyze_emotion
-
 # 외부 라우터 불러오기 (실시간 카카오 맛집 검색 및 AI 큐레이션 담당)
 from routers import recommend
 import traceback
 from routers import chat
+from search import classify_tour, EMBEDDINGS_INPUT_PATH
+from services.tour_image_service import get_tour_image
+import requests
 
 # ==========================================
 # 1. OpenAI API 키 설정
@@ -29,6 +31,10 @@ if not api_key:
     raise ValueError(
         "OPENAI_API_KEY가 설정되어 있지 않습니다."
     )
+# 한국관광공사 API 인증키
+tour_api_key= os.getenv("TOUR_API_KEY")
+if not tour_api_key:
+    raise ValueError("TOUR_API_KEY가 설정되지 않았습니다.")
 
 # ==========================================
 # 2. OpenAI 클라이언트 초기화
@@ -85,11 +91,11 @@ class TodayScheduleCreate(BaseModel):
 TOUR_DATA = []
 TOUR_EMBEDDINGS = []
 
+
 def load_tour_data():
     """서버 실행 시 pickle 파일에서 관광지 데이터와 임베딩 벡터를 메모리에 로드"""
     global TOUR_DATA, TOUR_EMBEDDINGS
-    pkl_path = "tour_embeddings.pkl"
-    
+    pkl_path = EMBEDDINGS_INPUT_PATH    
     if os.path.exists(pkl_path):
         try:
             with open(pkl_path, "rb") as f:
@@ -98,7 +104,10 @@ def load_tour_data():
                     TOUR_DATA = data.get("texts", [])
                     TOUR_EMBEDDINGS = data.get("embeddings", [])
                 elif isinstance(data, list):
-                    TOUR_DATA = data
+                    TOUR_DATA = [
+                        item["data"]
+                        for item in data
+                    ]
             print(f"관광지 임베딩 로드 완료! (총 {len(TOUR_DATA)}건)")
         except Exception as e:
             print(f"임베딩 데이터 로드 실패: {e}")
@@ -107,6 +116,7 @@ def load_tour_data():
 
 # 서버 구동 시 데이터 로드 실행
 load_tour_data()
+print("첫 번째 관광지 데이터:", TOUR_DATA[0] if TOUR_DATA else"데이터 없음")
 
 def search_tour_spots(query: str, top_k=3):
     """사용자의 질문 속 키워드를 분석하여 로드된 관광지 데이터 중 연관된 정보를 추출하는 함수"""
@@ -134,9 +144,24 @@ def search_tour_spots(query: str, top_k=3):
 @app.get("/")
 def read_root():
     """서버 헬스 체크용 루트 엔드포인트"""
-    return {"message": "Mujakjung AI Server is running"}
+    return {"messag": "Mujakjung AI Server is running"}
 
+@app.get("/api/tours/hidden")
+def get_hidden_tours():
+    hidden_tours = []
 
+    for tour in TOUR_DATA:
+        if classify_tour(tour) == "hidden":
+            image_url = get_tour_image(
+                tour.get("관광지명", "")
+            )
+
+            hidden_tours.append({
+                **tour,
+                "image_url": image_url
+            })
+
+    return {"tours": hidden_tours}
 
 @app.post("/generate")
 def generate(request: TextRequest):

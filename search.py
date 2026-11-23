@@ -96,7 +96,9 @@ def classify_tour(tour):
         "송도해수욕장",
         "다대포해수욕장"
     ]
-    hidden_places = []
+    hidden_places = [
+        "달음산자연휴양림"
+    ]
     if tour_name in famous_places:
         return "famous"
     if tour_name in hidden_places:

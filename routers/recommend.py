@@ -21,6 +21,7 @@ from services.geo_service import optimize_route, calculate_distance
 from services.public_data_service import search_public_recommendations
 
 from services.emotion_service import analyze_emotion
+from services.tour_image_service import get_tour_image
 
 # ============================================================
 # 2. API 라우터 설정
@@ -510,6 +511,11 @@ async def recommend_travel_course(request: RecommendRequest):
                     # 실제 검색된 좌표 사용
                     course["latitude"] = float(matched_place["y"])
                     course["longitude"] = float(matched_place["x"])
+
+                    if matched_place.get("category") == "관광지":   
+                        course["image_url"] = get_tour_image(course_name)
+                    else:
+                        course["image_url"] = None
 
                     valid_courses.append(course)
 
