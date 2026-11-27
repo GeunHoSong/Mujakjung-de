@@ -10,6 +10,47 @@ from sklearn.metrics import accuracy_score, classification_report
 
 # 학습 데이터 불러오기 
 df = pd.read_csv("data/emotion_travel.csv")
+print("결측치 개수")
+print(df.isnull().sum())
+
+# 중복 데이터 개수 확인 
+print("전체 행 중복 개수",  df.duplicated().sum())
+
+#중복 문장 개수 확인 
+print("중복 문장 개수", df["text"].duplicated().sum())
+#감정별 데이터 개수 확인 
+print("감정별 데이터 분포")
+print(df["emotion_code"].value_counts())
+
+# 전체 행 중복 데이터 제거 
+df = df.drop_duplicates()
+
+#중복 제거 후 데이터 개수 확인 
+print("중복 제거 후 데이터 개수 ", len(df))
+
+# 중복 문장 상세 확인
+duplicate_texts = df[df["text"].duplicated(keep=False)]
+
+# 중복 문장 상세 정보 출력
+print("중복 문장 상세 정보")
+print(duplicate_texts.sort_values(by="text"))
+# 감정 코드가 서로 다른 중복 문장 제거 
+df = df.drop_duplicates(
+    subset=["text"],
+    keep= False
+)
+
+# 최종 정제 데이터개수 확인 
+print("최종 데이터 개수", len(df))
+
+#정재후 중복 문장 확인 
+print("남은 중복 문장:", df["text"].duplicated().sum() )
+
+#정재후 감정 종류 확인 
+print("최종 감정 분류", df["emotion_code"].nunique())
+
+#전체 학습 데이터 개수 확인
+print("전체 데이터 개수 확인",  len(df))
 
 #전체 학습 데이터 개수 확인 
 print("전체 데이터 개수 확인", len(df))
@@ -65,7 +106,17 @@ y_pred  = model.predict(x_val)
 #모델 정확도 확인 
 accuracy = accuracy_score(y_val, y_pred)
 print("모델 정확도",  accuracy)
-
+# 감정 대 분류 추출 
+y_val_major = y_val.str.split("_").str[0]
+y_pred_major = [
+    code.split("_")[0] for code in y_pred
+]
+# 감정 대 분류 정확도 측정
+major_accuracy = accuracy_score(
+    y_val_major,
+    y_pred_major
+)
+print("감정 대 분류 정확도 ", major_accuracy)
 # 감정별 상세 성능 평가 
 print(classification_report(
     y_val,
